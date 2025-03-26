@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar
 
 CORAZON = "\u2764\uFE0F"
@@ -98,3 +98,96 @@ class Mano:
     def destapar(self):
         for carta in self.cartas:
             carta.destapar()
+
+    def limpiar(self):
+        self.cartas.clear()
+
+@dataclass
+class Casa:
+    mano: Mano = field(init=False, default=None)
+
+    def inicializar_mano(self, cartas: list[Carta]):
+        self.mano = Mano(cartas)
+
+    def recibir_carta(self, carta: Carta):
+        self.mano.agregar_carta(carta)
+
+@dataclass
+class Jugador:
+    nombre: str
+    fichas: int = field(init=False, default=100)
+    mano: Mano = field(init=False, default=None)
+
+    def inicializar_mano(self, cartas: list[Carta]):
+        self.mano = Mano(cartas)
+
+    def recibir_carta(self, carta: Carta):
+        self.mano.agregar_carta(carta)
+
+    def agregar_fichas(self, fichas: int):
+        self.fichas += fichas
+
+    def tiene_fichas(self) -> bool:
+        return self.fichas > 0
+
+
+class Blackjack:
+
+    def __init__(self):
+        self.apuesta_inicial: int = 0
+        self.cupier: Casa = Casa()
+        self.jugador: Jugador | None = None
+        self.baraja: Baraja = Baraja()
+
+    def registrar_jugador(self, nombre: str):
+        self.jugador = Jugador(nombre)
+
+    def iniciar_juego(self, apuesta: int):
+        self.apuesta_inicial = apuesta
+        self.jugador.mano.limpiar()
+        self.cupier.mano.limpiar()
+        self.baraja.reiniciar()
+        self.baraja.revolver()
+
+    # Repartir mano del jugador
+        cartas_jugador: list[Carta] =  [self.baraja.repartir_carta(), self.baraja.repartir_carta()]
+        self.jugador.inicializar_mano(cartas_jugador)
+
+    # Repartir mano de la casa
+        cartas_cupier: list[Carta] = [self.baraja.repartir_carta(), self.baraja.repartir_carta(oculta=True)]
+        self.cupier.inicializar_mano(cartas_cupier)
+
+    def repartir_carta_a_jugador(self):
+        self.jugador.recibir_carta(self.baraja.repartir_carta())
+
+    def destapar_mano_de_la_casa(self):
+        self.cupier.mano.destapar()
+
+    def casa_puede_pedir(self)-> bool:
+        valor_mano_casa = self.cupier.mano.calcular_valor()
+        valor_mano_jugador = self.jugador.mano.calcular_valor()
+        return valor_mano_casa <= valor_mano_jugador and valor_mano_casa <= 16
+
+    def finalizar_juego(self):
+        if self.jugador_gano():
+            self.jugador.agregar_fichas(self.apuesta_inicial)
+
+        elif self.casa_gano():
+            self.jugador.agregar_fichas(-self.apuesta_inicial)
+
+        self.apuesta_inicial = 0
+
+    def jugador_gano(self) -> bool:
+        valor_mano_casa = self.cupier.mano.calcular_valor()
+        valor_mano_jugador = self.jugador.mano.calcular_valor()
+        return self.jugador.mano.es_blackjack() or (valor_mano_casa < valor_mano_jugador <= 21)
+
+    def casa_gano(self) -> bool:
+        valor_mano_casa = self.cupier.mano.calcular_valor()
+        valor_mano_jugador = self.jugador.mano.calcular_valor()
+        return (not self.jugador.mano.es_blackjack()) and (valor_mano_jugador < valor_mano_casa <= 21)
+
+    def hay_empate(self) -> bool:
+        valor_mano_casa = self.cupier.mano.calcular_valor()
+        valor_mano_jugador = self.jugador.mano.calcular_valor()
+        return not self.jugador.mano.es_blackjack() and valor_mano_casa == valor_mano_jugador
