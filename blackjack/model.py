@@ -2,6 +2,8 @@ import random
 from dataclasses import dataclass, field
 from typing import ClassVar
 
+import self
+
 CORAZON = "\u2764\uFE0F"
 TREBOL = "\u2663\uFE0F"
 DIAMANTE = "\u2666\uFE0F"
@@ -30,6 +32,12 @@ class Carta:
             return 10
         else:
             return int(self.valor)
+
+    def __str__(self) -> str:
+    if self.oculta:
+        return OCULTA
+    else:
+        return f"{self.valor}"
 
 
 class Baraja:
@@ -102,6 +110,13 @@ class Mano:
     def limpiar(self):
         self.cartas.clear()
 
+    def __str__(self) -> str:
+        str_mano = ""
+        for carta in self.cartas:
+            str_mano += f"{str(carta):^5}"
+        return str_mano
+
+
 @dataclass
 class Casa:
     mano: Mano = field(init=False, default=None)
@@ -127,8 +142,8 @@ class Jugador:
     def agregar_fichas(self, fichas: int):
         self.fichas += fichas
 
-    def tiene_fichas(self) -> bool:
-        return self.fichas > 0
+    def tiene_fichas(self, apuesta: int = 1) -> bool:
+        return self.fichas >= apuesta
 
 
 class Blackjack:
@@ -144,8 +159,10 @@ class Blackjack:
 
     def iniciar_juego(self, apuesta: int):
         self.apuesta_inicial = apuesta
-        self.jugador.mano.limpiar()
-        self.cupier.mano.limpiar()
+        if self.jugador.mano:
+            self.jugador.mano.limpiar()
+        if self.cupier.mano:
+            self.cupier.mano.limpiar()
         self.baraja.reiniciar()
         self.baraja.revolver()
 
